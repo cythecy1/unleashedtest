@@ -7,21 +7,46 @@ namespace Number2Words
     public class NumberWordConverter
     {
         private readonly IDictionary<ulong, string> _numberWordsDictionary;
+        private readonly IDictionary<ulong, string> _digitsDictionary;
 
-        public NumberWordConverter(IDictionary<ulong, string> numberWordsDictionary)
+        public NumberWordConverter(IDictionary<ulong, string> numberWordsDictionary, IDictionary<ulong, string> digitsDictionary)
         {
             if(numberWordsDictionary == null)
             {
                 _numberWordsDictionary = new Dictionary<ulong, string>();
-                DefaultBuildEnglishDictionary();
+                BuildEnglishNumberDictionary();
             }
             else
             {
-                if (numberWordsDictionary.Count < 1) throw new ArgumentNullException();
+                if (numberWordsDictionary.Count < 1)
+                { 
+                    throw new ArgumentException("NumDictionaryEmpty"); 
+                }
+                else
+                {
+                    _numberWordsDictionary = numberWordsDictionary;
+                }
+            }
+
+            if(digitsDictionary == null)
+            {
+                _digitsDictionary = new Dictionary<ulong, string>();
+                BuildEnglishDigitsDictionary();
+            }
+            else
+            {
+                if (digitsDictionary.Count < 1)
+                {
+                    throw new ArgumentException("DigitDictionaryEmpty");
+                }
+                else
+                {
+                    _digitsDictionary = digitsDictionary;
+                }
             }
         }
 
-        private void DefaultBuildEnglishDictionary()
+        private void BuildEnglishNumberDictionary()
         {
             
             _numberWordsDictionary.Add(1, "one");
@@ -54,12 +79,32 @@ namespace Number2Words
             _numberWordsDictionary.Add(80, "eighty");
             _numberWordsDictionary.Add(90, "ninety");
 
-            _numberWordsDictionary.Add(100, "hundred");
-            _numberWordsDictionary.Add(1000, "thousand");
-            _numberWordsDictionary.Add(1000000, "million");
-            _numberWordsDictionary.Add(1000000000, "billion");
-            _numberWordsDictionary.Add(1000000000000, "trillion");
-            _numberWordsDictionary.Add(1000000000000000, "quandrillion");
         }
+
+        private void BuildEnglishDigitsDictionary()
+        {
+            _digitsDictionary.Add(100, "hundred");
+            _digitsDictionary.Add(1000, "thousand");
+            _digitsDictionary.Add(1000000, "million");
+            _digitsDictionary.Add(1000000000, "billion");
+            _digitsDictionary.Add(1000000000000, "trillion");
+            _digitsDictionary.Add(1000000000000000, "quandrillion");
+        }
+
+
+        public string QuickReturn(ulong input)
+        {
+            string returnString = String.Empty;
+            if(_numberWordsDictionary.TryGetValue(input, out returnString))
+            {
+                return returnString;
+            }
+            else
+            {
+                return String.Empty;
+            }
+
+        }
+
     }
 }
