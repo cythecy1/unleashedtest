@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace Number2Words
 {
     public class NumConverter
     {
-        public Dictionary<string, Func<uint, string>> BuilderDictionary { get; set; }
+        public Dictionary<string, Func<uint, string, string>> _resultDictionary { get; set; }
 
         private readonly Dictionary<uint, string> _lessTwentyDictionary;
 
         private readonly Dictionary<uint, string> _tensDictionary;
 
-        private readonly Dictionary<ulong, string> _scaleDictionary;
+        private List<string> _groupedCharacteristic;
+
+        private string _mantissa;
 
         public NumConverter()
         {
@@ -20,8 +23,7 @@ namespace Number2Words
             BuildLessTwentyDictionary();
             _tensDictionary = new Dictionary<uint, string>();
             BuildTensDictionary();
-            _scaleDictionary = new Dictionary<ulong, string>();
-            BuildScaleDictionary();
+            _resultDictionary = new Dictionary<string, Func<uint, string, string>>();
 
         }
         private void BuildLessTwentyDictionary()
@@ -63,29 +65,31 @@ namespace Number2Words
             _tensDictionary.Add(90, "ninety");
         }
 
-        private void BuildScaleDictionary()
+        private void InitializeResultDictionary()
         {
-            _scaleDictionary.Add(100, "hundred");
-            _scaleDictionary.Add(1000, "thousand");
-            _scaleDictionary.Add(1000000, "million");
-            _scaleDictionary.Add(1000000000, "billion");
-            _scaleDictionary.Add(1000000000000, "trillion");
-            _scaleDictionary.Add(1000000000000000, "quandrillion");
+            _resultDictionary.Clear();
+            _resultDictionary.Add("cents", null);
+            _resultDictionary.Add("hundred", null);
+            _resultDictionary.Add("thousand", null);
+            _resultDictionary.Add("million", null);
+            _resultDictionary.Add("billion", null);
+            _resultDictionary.Add("trillion", null);
+            _resultDictionary.Add("quadrillion", null);
+            _resultDictionary.Add("quintillion", null);
+            _resultDictionary.Add("sextillion", null);
+            _resultDictionary.Add("septillion", null);
         }
 
 
-        public string GetLessTwenty(uint input)
+        public string GetLessTwenty(uint input, string prefix = "")
         {
             if (input > 20)
-                return GetHundred(input);
-
-            if (input > 99)
                 throw new ArgumentException("AcceptOnlyLessThanTwentys");
 
             string returnString = String.Empty;
             if (_lessTwentyDictionary.TryGetValue(input, out returnString))
             {
-                return $" {returnString}";
+                return $"{prefix} {returnString}";
             }
             else
             {
@@ -94,10 +98,10 @@ namespace Number2Words
 
         }
 
-        public string GetTens(uint input)
+        public string GetTens(uint input, string prefix = "")
         {
             if (input < 20)
-                return GetLessTwenty(input);
+                return GetLessTwenty(input, prefix);
 
             if (input > 99)
                 throw new ArgumentException("AcceptOnlyTens");
@@ -112,7 +116,7 @@ namespace Number2Words
             string tensUnit, onesunit;
             if (_tensDictionary.TryGetValue(tenskey, out tensUnit))
             {
-                returnString = $" {tensUnit}";
+                returnString = $"{prefix} {tensUnit}";
 
                 if (oneskey > 0) //test if forty or forty one/forty two etc..
                 {
@@ -134,16 +138,12 @@ namespace Number2Words
             return returnString;
         }
 
-        public string GetHundred(uint input)
+        public string GetHundred(uint input, string prefix = "")
         {
-            if (input < 20)
-                return GetLessTwenty(input);
-
             if (input > 999)
-                throw new ArgumentException("AcceptOnlyHundreds");
+                GetTens(input, prefix);
 
             string returnString = String.Empty;
-
             decimal dInput = input;
             decimal hFloorResult = Math.Floor(dInput / 100); //example Floor(635/100) = 6
             if (hFloorResult > 0)
@@ -153,30 +153,156 @@ namespace Number2Words
                 string hundredUnit;
                 if (_lessTwentyDictionary.TryGetValue((uint)hFloorResult, out hundredUnit))
                 {
-                    returnString = $" {hundredUnit} hundred";
+                    returnString = $" {hundredUnit} hundred ";
                 }
                 //Process the tens component                    
                 uint tensComp = input - ((uint)hFloorResult * 100); //Remove the hundred component
                 if (tensComp > 0)
                 {
-                    returnString = returnString + GetTens(tensComp);
+                    returnString = returnString + GetTens(tensComp, prefix);
                 }
 
             }
             else
             {
                 //Tens component only
-                returnString = GetTens(input);
+                returnString = GetTens(input, prefix);
 
             }
 
             return returnString;
         }
 
-
-        public static string ToWord(this decimal input)
+        /// <summary>
+        /// Determines which function (GetTens, GetHundred) to use on which kv pair in resultDictionary
+        /// </summary>
+        public void BuildResult(string strInput)
         {
-            throw new NotImplementedException();
+
+            InitializeResultDictionary();
+
+            //No Cent assumption
+            string characteristic = strInput;
+
+            //Clean up no comma
+            characteristic = characteristic.Replace(",", "");
+
+            //Check for cents
+            if (strInput.Contains('.'))
+            {
+                var precision = strInput.Split(new char[] { '.' });  //Separate Mantissa with Characteristic
+                _mantissa = precision[1];
+                characteristic = precision[0];
+                _resultDictionary["cents"] = GetTens;
+            }
+
+            var arrCharacteristic = characteristic.ToCharArray();
+            Array.Reverse(arrCharacteristic); //Reverse so we can read from right to left
+            string sResult = String.Empty;
+            for (int idx = 1; idx <= arrCharacteristic.Length; idx++)
+            {
+                if (idx % 3 == 0) //mod 3 so we can group by hundreds
+                {
+                    sResult = sResult + arrCharacteristic[idx - 1] + ",";
+                }
+                else
+                {
+                    sResult = sResult + arrCharacteristic[idx - 1];
+                }
+            }
+
+            var splitCharacteristic = sResult.Split(new char[] { ',' });
+            _groupedCharacteristic = new List<string>(); //this is where hundreds are added;
+            foreach (var charac in splitCharacteristic)
+            {
+                var splitstrings = charac.ToCharArray();
+                Array.Reverse(splitstrings);
+                string sp = new string(splitstrings);
+                if (!String.IsNullOrWhiteSpace(sp))
+                    _groupedCharacteristic.Add(sp);
+
+            }
+
+            int kvIndex = 0;
+            //Finally fillout resultDictionary
+            foreach (string key in _resultDictionary.Keys.ToList())
+            {
+                if (key.Equals("cents")) continue;
+
+                try { var x = _groupedCharacteristic[kvIndex]; } catch (ArgumentOutOfRangeException) { break; }
+
+                if (_groupedCharacteristic[kvIndex].Length < 3)
+                {
+                    _resultDictionary[key] = GetTens;
+                }
+                else
+                {
+                    _resultDictionary[key] = GetHundred;
+                }
+
+                kvIndex++;
+
+            }
+
+
         }
+
+        public string NumToWords(decimal input)
+        {
+            return NumberToWords(input.ToString());
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="strInput"></param>
+        /// <returns></returns>
+        private string NumberToWords(string strInput)
+        {
+            Double d;
+            if (!Double.TryParse(strInput, out d))
+                throw new ArgumentException("NotANumber");
+
+            string sResult = String.Empty;
+
+            BuildResult(strInput.Trim());
+
+            int kvIndex = _groupedCharacteristic.Count - 1;
+            foreach (var pair in _resultDictionary.Reverse())
+            {
+                if (kvIndex < 0)
+                {
+                    //Resolve Mantissa
+                    sResult = sResult + pair.Value.Invoke(uint.Parse(_mantissa), "and") + " " + pair.Key;
+                    break;
+                }
+
+                if (pair.Value != null)
+                {
+                    if (pair.Key.Equals("hundred"))
+                    {
+                        sResult = sResult + pair.Value.Invoke(uint.Parse(_groupedCharacteristic[kvIndex]), "");
+                        kvIndex--;
+                    }
+                    else
+                    {
+                        sResult = sResult + pair.Value.Invoke(uint.Parse(_groupedCharacteristic[kvIndex]), "and") + " " + pair.Key + " ";
+                        kvIndex--;
+                    }
+                }
+
+
+            }
+
+            //Small clean up.
+            if (sResult.StartsWith("and"))
+                sResult = sResult.Substring(4, sResult.Length - 4);
+
+            sResult = sResult.Trim();
+            sResult = sResult.Replace("  ", " ");
+
+            return sResult;
+        }
+
     }
 }
