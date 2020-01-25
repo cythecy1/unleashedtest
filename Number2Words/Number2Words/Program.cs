@@ -8,11 +8,20 @@ namespace Number2Words
     {
         static void Main(string[] args)
         {
-            if(args.Length > 0)
-            {
-                /**Cheeky way to do it is to call a service.  Uncomment below to try that.**/                
+
+                /**Cheeky way to do it is to call a service.  Uncomment below to try that.**/
                 //UseNumberToWordsWebService(ulong.Parse(args[0]));
-            }
+                NumConverter converter = new NumConverter();
+
+                Console.WriteLine(converter.NumToWords(new decimal(1000)));
+                Console.WriteLine(converter.NumToWords(new decimal(10)));
+                Console.WriteLine(converter.NumToWords(new decimal(100)));
+                Console.WriteLine(converter.NumToWords(new decimal(100000)));
+                Console.WriteLine(converter.NumToWords(new decimal(1000000)));
+
+                Console.WriteLine(converter.NumToWords(new decimal(34834902347.45)));
+
+
         }
 
 

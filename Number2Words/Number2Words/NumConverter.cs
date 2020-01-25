@@ -237,7 +237,8 @@ namespace Number2Words
                 }
                 else
                 {
-                    _resultDictionary[key] = GetHundred;
+                    if(_groupedCharacteristic[kvIndex] != "000") //no function for the zeroes example 120,000,304 - skip 000
+                        _resultDictionary[key] = GetHundred;
                 }
 
                 kvIndex++;
@@ -270,10 +271,10 @@ namespace Number2Words
             int kvIndex = _groupedCharacteristic.Count - 1;
             foreach (var pair in _resultDictionary.Reverse())
             {
-                if (kvIndex < 0)
+                if (kvIndex < 0 && _mantissa != null)
                 {
                     //Resolve Mantissa
-                    sResult = sResult + pair.Value.Invoke(uint.Parse(_mantissa), "and") + " " + pair.Key;
+                    sResult = sResult + pair.Value.Invoke(uint.Parse(_mantissa), " and") + " " + pair.Key;
                     break;
                 }
 
