@@ -81,7 +81,7 @@ namespace Number2Words
         }
 
 
-        public string GetLessTwenty(uint input, string prefix = "")
+        public virtual string GetLessTwenty(uint input, string prefix = "")
         {
             if (input > 20)
                 throw new ArgumentException("AcceptOnlyLessThanTwentys");
@@ -98,7 +98,7 @@ namespace Number2Words
 
         }
 
-        public string GetTens(uint input, string prefix = "")
+        public virtual string GetTens(uint input, string prefix = "")
         {
             if (input < 20)
                 return GetLessTwenty(input, prefix);
@@ -140,8 +140,11 @@ namespace Number2Words
 
         public string GetHundred(uint input, string prefix = "")
         {
-            if (input > 999)
+            if (input < 100)
                 GetTens(input, prefix);
+
+            if (input > 999)
+                throw new ArgumentException("AcceptOnlyHundreds");
 
             string returnString = String.Empty;
             decimal dInput = input;
@@ -176,7 +179,7 @@ namespace Number2Words
         /// <summary>
         /// Determines which function (GetTens, GetHundred) to use on which kv pair in resultDictionary
         /// </summary>
-        public void BuildResult(string strInput)
+        private void BuildResult(string strInput)
         {
 
             InitializeResultDictionary();
@@ -250,7 +253,7 @@ namespace Number2Words
 
         public string NumToWords(decimal input)
         {
-            return NumberToWords(input.ToString());
+            return NumToWords(input.ToString());
         }
 
         /// <summary>
@@ -258,7 +261,7 @@ namespace Number2Words
         /// </summary>
         /// <param name="strInput"></param>
         /// <returns></returns>
-        private string NumberToWords(string strInput)
+        public string NumToWords(string strInput)
         {
             Double d;
             if (!Double.TryParse(strInput, out d))
